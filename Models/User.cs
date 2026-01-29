@@ -3,30 +3,14 @@
 namespace HRMS.API.Models
 {
     public class User
-    {
-        [Key]
-        public int Id { get; set; }
-
-        [Required]
-        [EmailAddress]
-        public string Email { get; set; } = string.Empty;
-
-        [Required]
-        public string Username { get; set; } = string.Empty;
-
-        [Required]
-        public byte[] PasswordHash { get; set; } = new byte[32];
-
-        public byte[] PasswordSalt { get; set; } = new byte[32];
-
-        public string? RefreshToken { get; set; }
-
-        public DateTime RefreshTokenExpiryTime { get; set; }
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        public DateTime? UpdatedAt { get; set; }
-
-        public bool IsActive { get; set; } = true;
+    { 
+        public string? Emp_Code { get; set; }
+        public string? Emp_Name { get; set; }
+        public string? Emp_Emailaddress { get; set; }
+        public string? Pwd { get; set; }
+        public string? emp_status { get; set; }
+        public string? UserGuid { get; set; }                
+        public string? PMS_Pwd { get; set; }
+        public string? ActualHrReleaseDate { get; set; }
     }
 }
