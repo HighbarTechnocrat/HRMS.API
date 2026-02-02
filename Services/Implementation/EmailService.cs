@@ -1,5 +1,6 @@
 ﻿using HRMS.API.Services.Interfaces;
 using System.Net.Mail;
+using System.Text;
 
 namespace HRMS.API.Services.Implementation
 {
@@ -41,43 +42,206 @@ namespace HRMS.API.Services.Implementation
             <hr>
             <p>This is an automated error notification from HRMS API.</p>";
 
-            await SendEmailAsync(adminEmail, subject, body);
+            await SendEmailErrorLogAsync(adminEmail, subject, body);
         }
+              
 
-        public async Task SendEmailAsync(string toEmail, string subject, string body)
+        public async Task SendEmailAsync(string toMailIDs, string subject, string strbody,string ccMailIDs)
         {
             try
             {
+
                 var smtpServer = _configuration["EmailSettings:SmtpServer"];
                 var smtpPort = _configuration.GetValue<int>("EmailSettings:SmtpPort", 587);
                 var fromEmail = _configuration["EmailSettings:FromEmail"];
                 var fromPassword = _configuration["EmailSettings:FromPassword"];
                 var enableSsl = _configuration.GetValue<bool>("EmailSettings:EnableSsl", true);
 
-                using (var client = new SmtpClient(smtpServer, smtpPort))
+                string stoemailid = "";
+                string sccemailid = "";
+
+                MailMessage mail = new MailMessage();
+                HashSet<string> uniqueEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                string[] strtoEmail = Convert.ToString(toMailIDs).Trim().Split(';');
+                foreach (string email in strtoEmail)
                 {
-                    client.EnableSsl = enableSsl;
-                    client.Credentials = new System.Net.NetworkCredential(fromEmail, fromPassword);
-
-                    var mailMessage = new MailMessage
+                    if (!string.IsNullOrWhiteSpace(email))
                     {
-                        From = new MailAddress(fromEmail),
-                        Subject = subject,
-                        Body = body,
-                        IsBodyHtml = true
-                    };
-                    mailMessage.To.Add(toEmail);
-
-                    await client.SendMailAsync(mailMessage);
-
-                    _logger.LogInformation("Email sent successfully to {ToEmail}", toEmail);
+                        if (Convert.ToString(email).Trim() != "")
+                        {
+                            uniqueEmails.Add(email.Trim());
+                        }
+                    }
                 }
+
+                string[] strCCEmail = Convert.ToString(ccMailIDs).Trim().Split(';');
+                foreach (string email in strCCEmail)
+                {
+                    if (!string.IsNullOrWhiteSpace(email))
+                    {
+                        if (Convert.ToString(email).Trim() != "")
+                            uniqueEmails.Add(email.Trim());
+                    }
+                }
+
+                foreach (string email in strtoEmail)
+                {
+                    if (uniqueEmails.Contains(email))
+                    {
+                        // mail.To.Add(email);
+                        uniqueEmails.Remove(email); // Remove it from uniqueEmails after adding to To
+                        stoemailid = stoemailid + email + ";";
+                    }
+                }
+
+                foreach (string email in strCCEmail)
+                {
+                    if (uniqueEmails.Contains(email))
+                    {
+                        //  mail.CC.Add(email); 
+                        sccemailid = sccemailid + email + ";";
+                    }
+                }
+
+                mail.To.Add("sanjay.patil@highbartech.com");
+
+                StringBuilder strsignature = new StringBuilder();
+
+                mail.From = new MailAddress(fromEmail, "OneHRAPI");
+
+                mail.Subject = subject;
+                //mail.Body = Convert.ToString(strbody) + Convert.ToString(strsignature);
+                mail.Body = "toMailIDs =" + stoemailid + "<br> ccMailIDs =" + sccemailid + "<br><br>" + Convert.ToString(strbody) + Convert.ToString(strsignature);
+                mail.IsBodyHtml = true;
+                mail.Priority = MailPriority.High;
+               
+
+                using (SmtpClient smtp = new SmtpClient())
+                {
+                    smtp.Host = "smtp.office365.com"; //Highbar SMTP
+
+                    smtp.Port = 587;
+                    smtp.TargetName = "STARTTLS/smtp.office365.com";
+                    smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
+                    System.Net.NetworkCredential SMTPUserInfo = new System.Net.NetworkCredential(fromEmail, fromPassword);
+                    smtp.UseDefaultCredentials = false;
+                    smtp.Credentials = SMTPUserInfo;
+                    smtp.EnableSsl = true;
+
+                    System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls12;
+                    smtp.Send(mail);
+                }
+                mail.Dispose();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _logger.LogError(ex, "Failed to send email to {ToEmail}", toEmail);
+
                 throw;
             }
+        }
+
+        public async Task SendEmailErrorLogAsync(string toMailIDs, string subject, string strbody, string ccMailIDs = "")
+        {
+
+            try
+            {
+
+                var smtpServer = _configuration["EmailSettings:SmtpServer"];
+                var smtpPort = _configuration.GetValue<int>("EmailSettings:SmtpPort", 587);
+                var fromEmail = _configuration["EmailSettings:FromEmail"];
+                var fromPassword = _configuration["EmailSettings:FromPassword"];
+                var enableSsl = _configuration.GetValue<bool>("EmailSettings:EnableSsl", true);
+
+                string stoemailid = "";
+                string sccemailid = "";
+
+                MailMessage mail = new MailMessage();
+                HashSet<string> uniqueEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                string[] strtoEmail = Convert.ToString(toMailIDs).Trim().Split(';');
+                foreach (string email in strtoEmail)
+                {
+                    if (!string.IsNullOrWhiteSpace(email))
+                    {
+                        if (Convert.ToString(email).Trim() != "")
+                        {
+                            uniqueEmails.Add(email.Trim());
+                        }
+                    }
+                }
+
+                string[] strCCEmail = Convert.ToString(ccMailIDs).Trim().Split(';');
+                foreach (string email in strCCEmail)
+                {
+                    if (!string.IsNullOrWhiteSpace(email))
+                    {
+                        if (Convert.ToString(email).Trim() != "")
+                            uniqueEmails.Add(email.Trim());
+                    }
+                }
+
+                foreach (string email in strtoEmail)
+                {
+                    if (uniqueEmails.Contains(email))
+                    {
+                        // mail.To.Add(email);
+                        uniqueEmails.Remove(email); // Remove it from uniqueEmails after adding to To
+                        stoemailid = stoemailid + email + ";";
+                    }
+                }
+
+                foreach (string email in strCCEmail)
+                {
+                    if (uniqueEmails.Contains(email))
+                    {
+                        //  mail.CC.Add(email); 
+                        sccemailid = sccemailid + email + ";";
+                    }
+                }
+
+                mail.To.Add("sanjay.patil@highbartech.com");
+                StringBuilder strsignature = new StringBuilder();
+                mail.From = new MailAddress(fromEmail, "OneHRAPI");
+
+                mail.Subject = subject;
+                //mail.Body = Convert.ToString(strbody) + Convert.ToString(strsignature);
+                mail.Body = "toMailIDs =" + stoemailid + "<br> ccMailIDs =" + sccemailid + "<br><br>" + Convert.ToString(strbody) + Convert.ToString(strsignature);
+                mail.IsBodyHtml = true;
+                mail.Priority = MailPriority.High;
+
+
+                using (SmtpClient smtp = new SmtpClient())
+                {
+                    smtp.Host = "smtp.office365.com";  
+                    smtp.Port = 587;
+                    smtp.TargetName = "STARTTLS/smtp.office365.com";
+                    smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
+                    System.Net.NetworkCredential SMTPUserInfo = new System.Net.NetworkCredential(fromEmail, fromPassword);
+                    smtp.UseDefaultCredentials = false;
+                    smtp.Credentials = SMTPUserInfo;
+                    smtp.EnableSsl = enableSsl;
+                    System.Net.ServicePointManager.SecurityProtocol |= System.Net.SecurityProtocolType.Tls | System.Net.SecurityProtocolType.Tls11 | System.Net.SecurityProtocolType.Tls12;                    
+                    await smtp.SendMailAsync(mail);
+                }
+                mail.Dispose();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+               
+
+        Task IEmailService.SendEmailAsync(string toEmail, string subject, string body)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task IEmailService.SendEmailErrorLogAsync(string toEmail, string subject, string body, string ccMailIDs)
+        {
+            throw new NotImplementedException();
         }
     }
 }

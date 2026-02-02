@@ -4,32 +4,22 @@ namespace HRMS.API.Models
 {
     public class ErrorLog
     {
-        [Key]
-        public int Id { get; set; }
+       
+        public string ControllerName { get; set; }=string.Empty;
+ 
+        public string ActionName { get; set; } = string.Empty;
 
-        [Required]
-        [MaxLength(500)]
-        public string ControllerName { get; set; }
+        
+        public string ErrorMessage { get; set; } = string.Empty;
 
-        [Required]
-        [MaxLength(200)]
-        public string ActionName { get; set; }
+        public string StackTrace { get; set; } = string.Empty;
 
-        [Required]
-        public string ErrorMessage { get; set; }
+        public string RequestPath { get; set; } = string.Empty;
 
-        public string StackTrace { get; set; }
+        public string RequestMethod { get; set; } = string.Empty;
 
-        public string RequestPath { get; set; }
-
-        public string RequestMethod { get; set; }
-
-        public string UserId { get; set; }
-
-        [Required]
-        public DateTime CreatedAt { get; set; }
-
-        [MaxLength(50)]
-        public string ErrorLevel { get; set; } // Error, Warning, Information
+        public string EmpCode { get; set; } = string.Empty;
+                
+        public string ErrorLevel { get; set; } = string.Empty; // Error, Warning, Information
     }
 }

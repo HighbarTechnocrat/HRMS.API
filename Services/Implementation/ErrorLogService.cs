@@ -1,34 +1,19 @@
 ﻿using HRMS.API.Data;
 using HRMS.API.Models;
+using HRMS.API.Repository.Interfaces;
 using HRMS.API.Services.Interfaces;
 
 namespace HRMS.API.Services.Implementation
 {
     public class ErrorLogService : IErrorLogService
-    {
-        private readonly ApplicationDbContext _context;
+    { 
+        private readonly IErrorlogRepository _errorlogRepository;
 
-        public ErrorLogService(ApplicationDbContext context)
-        {
-            _context = context;
+        public ErrorLogService(IErrorlogRepository errorlogRepository)
+        {      
+            _errorlogRepository = errorlogRepository;
         }
-
-        public async Task LogErrorAsync(ErrorLog errorLog)
-        {
-            try
-            {
-                errorLog.CreatedAt = DateTime.UtcNow;
-                _context.ErrorLogs.Add(errorLog);
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                // Fallback to file logging if database fails
-                Console.WriteLine($"Failed to log error to database: {ex.Message}");
-                // You can also log to file or other logging providers here
-            }
-        }
-
+         
         public async Task LogErrorAsync(string controllerName, string actionName,
                                        string errorMessage, string stackTrace = null,
                                        string requestPath = null, string requestMethod = null,
@@ -42,11 +27,13 @@ namespace HRMS.API.Services.Implementation
                 StackTrace = stackTrace,
                 RequestPath = requestPath,
                 RequestMethod = requestMethod,
-                UserId = userId,
+                EmpCode = userId,
                 ErrorLevel = errorLevel
             };
 
-            await LogErrorAsync(errorLog);
+            //errorLog.CreatedAt = DateTime.UtcNow;            
+            // await LogErrorAsync(errorLog);
+            await _errorlogRepository.CreateLogErrorAsync(errorLog);
         }
     }
 }

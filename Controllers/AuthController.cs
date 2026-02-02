@@ -1,15 +1,13 @@
 ﻿using AutoMapper;
 using HRMS.API.DTOs;
 using HRMS.API.Models.Response;
-using HRMS.API.Models;
 using HRMS.API.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using HRMS.API.Services;
-using Microsoft.Extensions.Logging;
 
 namespace HRMS.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v{version:apiVersion}/[controller]")]
+    [ApiVersion("1.0")]
     [ApiController]
     public class AuthController : ControllerBase
     {

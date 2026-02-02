@@ -5,5 +5,7 @@
         Task SendErrorNotificationAsync(string controllerName, string actionName,
                                      string errorMessage, string stackTrace = null);
         Task SendEmailAsync(string toEmail, string subject, string body);
+
+        Task SendEmailErrorLogAsync(string toEmail, string subject, string body,string ccMailIDs);
     }
 }

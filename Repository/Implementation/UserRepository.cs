@@ -35,6 +35,11 @@ namespace HRMS.API.Repository.Implementation
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
+            await connection.ExecuteAsync(
+                    "[dbo].[API_SP_LogError]",
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                );
 
             // Read first result set if exists
             //var user = await multi.ReadFirstOrDefaultAsync<User>();

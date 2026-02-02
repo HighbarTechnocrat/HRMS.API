@@ -6,7 +6,10 @@ using HRMS.API.Repository.Interfaces;
 using HRMS.API.Services;
 using HRMS.API.Services.Implementation;
 using HRMS.API.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,18 +20,52 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("HRMSConnection")); 
 });
 
-// Add services to the container.
-//builder.Services.AddControllers();
-// Add services to the container
+// Add API Versioning
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+
+    // ONLY use URL segment versioning
+    options.ApiVersionReader = new UrlSegmentApiVersionReader();
+});
+
+// Add API Explorer for Swagger/OpenAPI support
+builder.Services.AddVersionedApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
+
+
 builder.Services.AddControllers(options =>
 {
     // Add global filters
     options.Filters.Add<ApiResponseFilter>();
     options.Filters.Add<GlobalExceptionFilter>();
 });
-
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+
+//builder.Services.AddSwaggerGen();
+
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Notification API v1",
+        Version = "v1",
+        Description = "Notification API Version 1"
+    });
+
+    options.SwaggerDoc("v2", new OpenApiInfo
+    {
+        Title = "Notification API v2",
+        Version = "v2",
+        Description = "Notification API Version 2"
+    });
+});
 
 // Configure CORS
 builder.Services.AddCors(options =>
@@ -44,11 +81,16 @@ builder.Services.AddCors(options =>
 
 
 
-// Register repository and services
+// Register repository  
+builder.Services.AddScoped<IErrorlogRepository, ErrorLogRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+
+// Register repository  
 builder.Services.AddScoped<IErrorLogService, ErrorLogService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 
 //builder.Services.AddAutoMapper(typeof(Program).Assembly);
