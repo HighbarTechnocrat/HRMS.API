@@ -30,9 +30,7 @@ namespace HRMS.API.Services.Implementation
                 EmpCode = userId,
                 ErrorLevel = errorLevel
             };
-
-            //errorLog.CreatedAt = DateTime.UtcNow;            
-            // await LogErrorAsync(errorLog);
+             
             await _errorlogRepository.CreateLogErrorAsync(errorLog);
         }
     }

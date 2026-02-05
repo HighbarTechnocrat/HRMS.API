@@ -42,7 +42,7 @@ namespace HRMS.API.Repository.Implementation
                 );
 
             // Read first result set if exists
-            //var user = await multi.ReadFirstOrDefaultAsync<User>();
+           // var result = await multi.ReadFirstOrDefaultAsync<User>();
             var result = await multi.ReadFirstOrDefaultAsync<dynamic>();
 
             if (result == null) return null;
