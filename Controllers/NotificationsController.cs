@@ -2,10 +2,12 @@
 using HRMS.API.DTOs;
 using HRMS.API.Models.Response;
 using HRMS.API.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HRMS.API.Controllers
 {
+    [Authorize]
     [Route("api/v{version:apiVersion}/[controller]")]
     [ApiVersion("1.0")]
     [ApiController]
@@ -43,7 +45,7 @@ namespace HRMS.API.Controllers
             }
 
 
-             
+
             //var userResponse = _mapper.Map<UserResponse>(result.Data);
             return Ok(new
             {

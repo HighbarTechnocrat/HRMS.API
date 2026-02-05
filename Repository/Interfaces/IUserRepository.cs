@@ -8,5 +8,8 @@ namespace HRMS.API.Repository.Interfaces
         Task<User?> ValidateUserAsync(ValidateUserRequest request);
         Task<string> ChangePasswordAsync(ChangePasswordRequest request);
         Task<User?> ValidateUserSaltAsync(string email);
+        Task<bool> ResetPasswordAsync(string email, string hashedPassword, Guid guid);
+        public  Task<ForgotPasswordEmailTemplate> GetForgotPasswordEmailDetails(string email);
+
     }
 }

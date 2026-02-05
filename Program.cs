@@ -1,15 +1,20 @@
-using HRMS.API.Data;
+﻿using HRMS.API.Data;
+using HRMS.API.DTOs;
 using HRMS.API.Filters;
 using HRMS.API.Mappings;
+using HRMS.API.Models.Auth;
 using HRMS.API.Repository.Implementation;
 using HRMS.API.Repository.Interfaces;
 using HRMS.API.Services;
 using HRMS.API.Services.Implementation;
 using HRMS.API.Services.Interfaces;
-using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +22,7 @@ var builder = WebApplication.CreateBuilder(args);
 // For SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("HRMSConnection")); 
+    options.UseSqlServer(builder.Configuration.GetConnectionString("HRMSConnection"));
 });
 
 // Add API Versioning
@@ -45,11 +50,9 @@ builder.Services.AddControllers(options =>
     options.Filters.Add<ApiResponseFilter>();
     options.Filters.Add<GlobalExceptionFilter>();
 });
+
+
 builder.Services.AddEndpointsApiExplorer();
-
-
-//builder.Services.AddSwaggerGen();
-
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -65,12 +68,30 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v2",
         Description = "Notification API Version 2"
     });
-});
 
-// Configure CORS
+    // Add JWT Authentication to Swagger UI
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter 'Bearer' followed by your JWT token."
+    });
+
+    // Configure CORS
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } },
+            new string[] {}
+        }
+    });
+});
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
+    options.AddPolicy("AllowAll", 
         builder =>
         {
             builder.AllowAnyOrigin()
@@ -90,23 +111,43 @@ builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IErrorLogService, ErrorLogService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ISendMail, SendMailService>();
+builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
 
 //builder.Services.AddAutoMapper(typeof(Program).Assembly);
 builder.Services.AddAutoMapper(typeof(UserProfile));
 builder.Services.AddScoped<ISecurityService, SecurityService>();
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
 // Configure logging
 //builder.Logging.ClearProviders();
 //builder.Logging.AddConsole();
 //builder.Logging.AddDebug();
 
-builder.Services.AddLogging(logging =>
+// JWT Authentication
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
+
+builder.Services.AddAuthentication(options =>
 {
-    logging.AddConsole();
-    logging.AddDebug();
-    logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+
+        ValidIssuer = jwtSettings.Issuer,
+        ValidAudience = jwtSettings.Audience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key))
+    };
 });
 
 // Configure database connection
@@ -124,12 +165,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 else
-{ 
+{
     app.UseExceptionHandler("/error");
 }
 
 //app.UseHttpsRedirection();
+app.UseRouting();
 app.UseCors("AllowAll");
+app.UseAuthentication(); 
 app.UseAuthorization();
 app.MapControllers();
 

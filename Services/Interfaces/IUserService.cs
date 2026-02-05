@@ -8,5 +8,7 @@ namespace HRMS.API.Services.Interfaces
         Task<ApiResponse<User?>> ValidateUserLoginAsync(string email, string password);
         Task<ApiResponse<string>> ChangePasswordAsync(ChangePasswordRequest request);
         Task<ApiResponse<User?>> GetUserByEmailAsync(string email);
+        public Task<ApiResponse<object>> ForgetPasswordAsync(string email);
+
     }
 }

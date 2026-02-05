@@ -2,6 +2,7 @@
 using HRMS.API.DTOs;
 using HRMS.API.Models.Response;
 using HRMS.API.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HRMS.API.Controllers
@@ -14,11 +15,13 @@ namespace HRMS.API.Controllers
         private readonly IUserService _userService;
         private readonly ILogger<AuthController> _logger;
         private readonly IMapper _mapper;
-        public AuthController(IUserService userService, ILogger<AuthController> logger, IMapper mapper)
+        private readonly IJwtTokenService _jwtTokenService;
+        public AuthController(IUserService userService, ILogger<AuthController> logger, IMapper mapper, IJwtTokenService jwtTokenService)
         {
             _userService = userService;
             _logger = logger;
             _mapper = mapper;
+            _jwtTokenService = jwtTokenService;
         }
 
         [HttpPost("login")]
@@ -43,21 +46,20 @@ namespace HRMS.API.Controllers
                 return Unauthorized(result);
             }
 
-             
+            var token = _jwtTokenService.GenerateToken(result.Data);
 
-            // Here you can generate JWT token if needed
-            // var token = GenerateJwtToken(result.Data);
-
-            var userResponse = _mapper.Map<UserResponse>(result.Data);
-            return Ok(new
+            return Ok(new ApiResponse<object>
             {
                 Success = true,
                 Message = "Login successful",
-                User = userResponse
-                // Token = token
+                Data = new
+                {
+                    Token = token,
+                    User = result.Data
+                }
             });
         }
-
+        [Authorize]
         [HttpPost("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
@@ -101,5 +103,43 @@ namespace HRMS.API.Controllers
             var result = await _userService.GetUserByEmailAsync(email);
             return Ok(result);
         }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Email is required"
+                });
+            }
+
+            try
+            {
+                var result = await _userService.ForgetPasswordAsync(request.Email);
+
+                if (result.Success)
+                {
+                    return Ok(result);
+                }
+                else
+                {
+                    return BadRequest(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in forgot password for email: {Email}", request.Email);
+
+                return StatusCode(500, new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Internal server error"
+                });
+            }
+        }
+
     }
 }

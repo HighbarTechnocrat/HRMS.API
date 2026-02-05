@@ -31,18 +31,11 @@ namespace HRMS.API.Repository.Implementation
             parameters.Add("@SearchId", request.SearchId);
 
             using var multi = await connection.QueryMultipleAsync(
-                "[dbo].[API_SP_Admin_Validate_User]",
+                "[dbo].[API_SP_Admin_Validate_User_bkp_322026]",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
-            await connection.ExecuteAsync(
-                    "[dbo].[API_SP_LogError]",
-                    parameters,
-                    commandType: CommandType.StoredProcedure
-                );
 
-            // Read first result set if exists
-           // var result = await multi.ReadFirstOrDefaultAsync<User>();
             var result = await multi.ReadFirstOrDefaultAsync<dynamic>();
 
             if (result == null) return null;
@@ -62,6 +55,22 @@ namespace HRMS.API.Repository.Implementation
                 ActualHrReleaseDate = result.ActualHrReleaseDate?.ToString()
             };
 
+            var logParams = new DynamicParameters();
+            logParams.Add("@qtype", "CreateErrorLog");
+            logParams.Add("@ControllerName", "AuthController");
+            logParams.Add("@ActionName", "Login");
+            logParams.Add("@ErrorMessage", null);
+            logParams.Add("@StackTrace", null);
+            logParams.Add("@RequestPath", "/api/v1/Auth/login");
+            logParams.Add("@RequestMethod", "POST");
+            logParams.Add("@EmpCode", user.Emp_Code);
+            logParams.Add("@ErrorLevel", "Error");
+
+            await connection.ExecuteAsync(
+                    "[dbo].[API_SP_LogError]",
+                    logParams,
+                    commandType: CommandType.StoredProcedure
+                );
 
             return user;
         }
@@ -115,5 +124,50 @@ namespace HRMS.API.Repository.Implementation
 
             return await ValidateUserAsync(request);
         }
+
+        public async Task<bool> ResetPasswordAsync(string email, string hashedPassword, Guid guid)
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@SearchString", email);
+            parameters.Add("@Pwd", hashedPassword);
+            parameters.Add("@Guid", guid);
+            parameters.Add("@qtype", "UpdatePassword");
+
+            var isSuccess = await connection.ExecuteScalarAsync<int?>(
+                "[dbo].[API_SP_Admin_Validate_User_bkp_322026]",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+            return isSuccess == 1;
+        }
+
+        public async Task<ForgotPasswordEmailTemplate> GetForgotPasswordEmailDetails(string email)
+        {
+           
+                using var connection = new SqlConnection(_connectionString);
+
+                var parameters = new DynamicParameters();
+                parameters.Add("@SearchString", email);
+                parameters.Add("@qtype", "GetForgotPasswordEmail");
+                using (var reader = await connection.QueryMultipleAsync(
+                    "[dbo].[API_SP_Admin_Validate_User_bkp_322026]",
+                    parameters,
+                    commandType: CommandType.StoredProcedure))
+                {
+                    var employeeNameResult = await reader.ReadFirstOrDefaultAsync<dynamic>();
+                    string employeeName = employeeNameResult?.Emp_Name ?? "User";
+
+                    var emailTemplate = await reader.ReadFirstOrDefaultAsync<EmailTemplateDto>();
+
+                    return new ForgotPasswordEmailTemplate
+                    {
+                        EmployeeName = employeeName,
+                        EmailTemplate = emailTemplate
+                    };
+                }
+        }
+
     }
 }
