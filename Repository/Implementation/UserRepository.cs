@@ -31,7 +31,7 @@ namespace HRMS.API.Repository.Implementation
             parameters.Add("@SearchId", request.SearchId);
 
             using var multi = await connection.QueryMultipleAsync(
-                "[dbo].[API_SP_Admin_Validate_User_bkp_322026]",
+                "[dbo].[API_SP_Admin_Validate_User]",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
@@ -136,7 +136,7 @@ namespace HRMS.API.Repository.Implementation
             parameters.Add("@qtype", "UpdatePassword");
 
             var isSuccess = await connection.ExecuteScalarAsync<int?>(
-                "[dbo].[API_SP_Admin_Validate_User_bkp_322026]",
+                "[dbo].[API_SP_Admin_Validate_User]",
                 parameters,
                 commandType: CommandType.StoredProcedure
             );
@@ -152,7 +152,7 @@ namespace HRMS.API.Repository.Implementation
                 parameters.Add("@SearchString", email);
                 parameters.Add("@qtype", "GetForgotPasswordEmail");
                 using (var reader = await connection.QueryMultipleAsync(
-                    "[dbo].[API_SP_Admin_Validate_User_bkp_322026]",
+                    "[dbo].[API_SP_Admin_Validate_User]",
                     parameters,
                     commandType: CommandType.StoredProcedure))
                 {

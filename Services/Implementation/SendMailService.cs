@@ -24,12 +24,12 @@ namespace HRMS.API.Services.Implementation
                 {
                     client.UseDefaultCredentials = false;
                     client.DeliveryMethod = SmtpDeliveryMethod.Network;
-                    client.Credentials = new NetworkCredential(_emailSettings.UserName, _emailSettings.Password);
+                    client.Credentials = new NetworkCredential(_emailSettings.FromEmail, _emailSettings.FromPassword);
                     client.EnableSsl = _emailSettings.EnableSsl;
 
                     var mailMessage = new MailMessage
                     {
-                        From = new MailAddress(_emailSettings.SenderEmail, _emailSettings.DisplayName),
+                        From = new MailAddress(_emailSettings.FromEmail, _emailSettings.DisplayName),
                         Subject = obj.Subject,
                         Body = obj.mailBody,
                         IsBodyHtml = true
@@ -51,7 +51,7 @@ namespace HRMS.API.Services.Implementation
                 }
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception ex)    
             {
                 Console.WriteLine($"Email sending error: {ex.Message}");
                 return false;

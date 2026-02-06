@@ -40,7 +40,7 @@ namespace HRMS.API.Services.Implementation
                 }
 
                 // Check if user is allowed to login based on ActualHrReleaseDate
-                if (user.ActualHrReleaseDate == "false")
+                if (user.ActualHrReleaseDate == "true")
                 {
                     return new ApiResponse<User?>
                     {
